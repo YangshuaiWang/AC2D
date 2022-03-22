@@ -1,0 +1,178 @@
+
+
+%% main choices of benchmark
+
+% crack size
+% Kc = 5;
+Kc = 0;
+% data for toy-eam model
+a = 4; b = 3; c = 10; rCutH = 2;   
+% macro-deformation from ground state
+F0 = [1, 0.03; 0, 1];
+
+% methods to be benchmarked
+acmethods = {'atm', 'qce', 'bqc', 'gqc23'};
+% atomistic region sizes
+K0 = [3, 4, 6, 8, 11, 16, 22];   % (~powers of sqrt(2))
+% K0 = [3, 4, 6, 8, 11];   
+% for balancing errors: N^{-1} ~ K^{-2} >> N ~ K^2
+N = K0.^2 + 10;
+% blending width for BQCE
+blendwidth = ceil(K0/2)+1;
+% reference computation is done with
+N_ref = ceil(2 * max(N));
+% blending type used for bqce
+blendtype = 'min-hessian';
+
+dirname = 'bench_mcrack_2';
+
+
+
+%% setup
+% vacancy set
+% V = 1:(2*Kc+1);
+V = 1;
+% model
+model = model_toyeam_h(a, b, c, rCutH);
+model.bc = 'dir';
+max_dh = model.rCutH;
+% CB reference state
+Fcb = get_cb_groundstate(model);
+F0 = F0 * Fcb;
+model.F0 = F0;
+
+
+% % derived values for atomistic region sizes
+% K = [1;1;1]*K0 + max_dh + [0*blendwidth; blendwidth; blendwidth];
+
+
+%% create task list
+ntasks = length(acmethods) * length(K0) + 1;
+% comparison solution
+task(1).actype = 'atm'; task(1).K = N_ref; task(1).Kc = Kc;
+task(1).N = N_ref; task(1).alpha = 0; task(1).V = V;
+task(1).model = model; task(1).F0 = F0;
+task(1).bw = 0; task(1).blendtype = 'x';
+task(1).filename = ['./out/', dirname, '/refsoln'];
+
+% coarse solutions
+ind = 1;
+for iK = 1:length(K0)
+  for iac = 1:length(acmethods)
+    ind = ind + 1;
+    task(ind).iac = iac;
+    task(ind).iK = iK;                    
+    task(ind).actype = acmethods{iac};     
+    task(ind).Kc = Kc;    
+    task(ind).alpha = 1.5;
+    task(ind).V = V;
+    task(ind).model = model;
+    task(ind).F0 = F0;
+    
+    switch task(ind).actype
+      case 'bqc'
+        task(ind).bw = blendwidth(iK);
+        task(ind).blendtype = blendtype;
+        task(ind).N = N(iK);
+        task(ind).K = K0(iK) + blendwidth(iK) + rCutH;
+      case 'atm'
+        task(ind).bw = 0;
+        task(ind).blendtype = 'x';
+        task(ind).N = N(iK);
+        task(ind).K = task(ind).N;
+      case 'qce'
+        tast(ind).actype = 'bqc';
+        task(ind).bw = 0;
+        task(ind).blendtype = 'qce';
+        task(ind).N = N(iK);
+        task(ind).K = K0(iK) + rCutH + 2;
+      case 'gqc23'
+        task(ind).bw = 0;
+        task(ind).blendtype = 'x';
+        task(ind).N = N(iK);
+        task(ind).K = K0(iK) + rCutH;
+        
+      otherwise
+        error('ERROR: unknown actype in bench_mcrack');
+    end
+    
+    task(ind).filename = ['./out/', dirname, '/',  ...
+                          task(ind).actype, '_', ...
+                          task(ind).blendtype, '_', ...
+                          num2str(task(ind).K) ];
+  end
+end
+
+
+
+%% save setup
+% global data
+data.bc = model.bc;
+data.N = N;
+data.V = V;
+data.F0 = F0;
+data.a = a; data.b = b; data.c = c; data.rCutH = rCutH;
+data.acmethods = acmethods;
+data.K0 = K0;
+data.Kc = Kc;
+data.blendtype = blendtype;
+data.blendwidth = blendwidth;
+% data.K = K;
+data.alpha = 1.5;
+data.model = model;
+data.dirname = dirname;
+data.max_dh = max_dh;
+% save both data and task in the setup.mat
+mkdir(['out/', dirname]);
+save(['out/', dirname, '/setup'], 'data', 'task');
+
+
+
+    
+%% main benchmark loop
+% create a storage function
+parforsave = @(fn, geom, Y, E, task)(save(fn, 'geom', 'Y', 'E', 'task'));
+% start loop
+parfor t = 1:ntasks
+  % display a message to show which task this is:
+  disp([task(t).actype, ': N = ', num2str(task(t).N), ...
+    ', K = ', num2str(task(t).K)]);
+  % create geometry
+  geom = geom_2dtri_mcrack(task(t).Kc, task(t).K, task(t).N, rCutH);
+  % prepare geom for AC-method
+  switch task(t).actype
+    case 'atm'
+      geom.volX = ones(1, geom.nX);
+    case 'qce'
+      geom = bqc_prep_geom(geom, max_dh, 1, 'qce');
+    case 'bqc'
+      geom = bqc_prep_geom(geom, max_dh, task(t).bw, task(t).blendtype);
+    case 'gqc23'
+      geom = gqc23_prep_geom(geom);
+    otherwise
+      error('ERROR: unknown actype in bench_vac');
+  end
+  % call solver and save result
+  if exist([task(t).filename, '.mat'], 'file') ~= 2
+    addpath ./packages/popt
+    opts = solve_opts();
+    opts.actype = task(t).actype;
+    % opts.prec = 'dyn_laplace';
+    opts.popt.disp = 0;
+%     if t == 1
+%       opts.popt.disp = 1;
+%     end
+%     % create an initial condition
+%     opts.U0 = F0 * geom.X;
+%     % I = find(geom.di >= 0); I = I(1:min(length(I), size(Yc,2)));
+%     % opts.U0(:, I) = Yc(:, I);
+    % call the solver
+    [Y, E] = solve_main(geom, task(t).model, task(t).F0, opts);
+    % save result
+    parforsave(task(t).filename, geom, Y, E, task(t));
+  end
+end
+
+
+
+

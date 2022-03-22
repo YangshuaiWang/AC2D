@@ -1,0 +1,139 @@
+
+dirname = 'bench_mcrack_2'    %#ok
+
+%% load all solutions, store reference data
+
+% load setup data
+load(['out/', dirname, '/setup']);
+nac = length(data.acmethods);
+nK = length(data.K0);
+% allocate storage for errors
+Err2 = zeros(nac, nK);
+Err1 = Err2; ErrInf = Err2; ErrE = Err2; DOF = Err2;
+% load reference solution and store required reference values
+load(task(1).filename, 'geom', 'Y', 'E');
+U_ref = Y - data.F0 * geom.X;
+geom_ref = geom;
+E_ref = E;
+ref_nrm2 = W1p_norm(geom.X, geom.T, U_ref, 2);
+ref_nrminf = W1p_norm(geom.X, geom.T, U_ref, inf);
+ref_nrm1 = W1p_norm(geom.X, geom.T, U_ref, 1);
+
+% % compute the energy of the ground-state to compare against
+% volDom = 6 * sqrt(3)/2 * data.N^2;
+% W0 = data.model.Wfun(model, data.F0);
+% E_ref = E_ref - volDom * W0;
+
+% subtract the energy of the reference state
+W0 = data.model.Wfun(data.model, data.model.F0);
+E_ref = E_ref - geom_volume(geom_ref) * W0;
+
+
+
+%% compute errors
+% loop through computations
+% load(['out/', dirname, '/errors']);
+for t = 2:length(task)
+  disp(task(t).filename);
+  % load solution
+  load(task(t).filename, 'geom', 'Y', 'E');
+  U = Y - data.F0 * geom.X;
+  E = E - geom_volume(geom) * W0;
+  iac = task(t).iac; iK = task(t).iK;
+  % number of DOFs
+  DOF(iac, iK) = numel(U)/2; % size(U, 1) * geom.nX;
+  % W1p-errors
+  [err1, err2, errinf] = err_W1p(U, geom, U_ref, geom_ref);
+  Err1(iac, iK) = err1 / ref_nrm1;
+  Err2(iac, iK) = err2 / ref_nrm2;
+  ErrInf(iac, iK) = errinf / ref_nrminf;
+  % energy-error
+  ErrE(iac, iK) = abs(E - E_ref); % / abs(E_ref - E0);
+end
+
+
+save(['out/', dirname, '/errors'], 'data', ...
+  'Err1', 'Err2', 'ErrInf', 'ErrE', 'DOF');
+
+
+% return;
+
+
+%% Plots Dirichlet 300 
+load(['out/', dirname, '/errors']);
+dof = [min(DOF(:)), max(DOF(:))]; % 2.^(1:2:20);
+lw = 1.2; ms = 8; lwth = 1.0;
+mrkrs = {'bo-', 'gs-', 'r^-', 'c*-'}
+mrk_rate = 'k:';
+
+% W12-error
+figure(1); subplot(2,2,1);
+for j = 1:nac
+  loglog(DOF(j,:), Err2(j, :), mrkrs{j}, ...
+    'Linewidth', lw, 'Markersize', ms); hold on;
+end
+loglog(dof, (dof/dof(1)).^(-1/2), 'k:', 'Linewidth', lwth); 
+loglog(dof, (dof/dof(1)).^(-1), 'k:', 'Linewidth', lwth); 
+hold off;
+xlabel('# DoFs'); 
+ylabel('$| u_{\mathrm{ac}} - u |_{1,2} \, / \, | u |_{1,2}$', ...
+  'Interpreter', 'latex');
+axis([dof(1) / 1.5, dof(2) * 1.5, 1e-2, 1]);
+% legend('QCE', 'Linear Blending', 'Smooth Blending', 'DoF^{-1/2}', 'Location', 'Southwest');
+set(gca, 'XMinortick', 'off', 'YMinorTick', 'off', 'Fontsize', 14);
+
+legend(data.acmethods);
+
+% W1inf-error
+subplot(2,2,2);
+for j = 1:nac
+  loglog(DOF(j,:), ErrInf(j, :), mrkrs{j}, ...
+    'Linewidth', lw, 'Markersize', ms); hold on;
+end
+loglog(dof, (dof/dof(1)).^(-1), 'k:', 'Linewidth', lwth); 
+loglog(dof, (dof/dof(1)).^(-3/2), 'k:', 'Linewidth', lwth); 
+hold off;
+xlabel('# DoFs'); 
+ylabel('$| u_{\mathrm{ac}} - u |_{1,\infty} \, / \, | u |_{1,\infty}$', ...
+  'Interpreter', 'latex');
+axis([dof(1) / 1.5, dof(2) * 1.5, 4e-3, 6e-1]);
+% legend('QCE', 'Linear Blending', 'Smooth Blending', 'DoF^{-1/2}', 'Location', 'Southwest');
+set(gca, 'XMinortick', 'off', 'YMinorTick', 'off', 'Fontsize', 14);
+
+
+
+% W11-error
+subplot(2,2,3);
+for j = 1:nac
+  loglog(DOF(j,:), Err1(j, :), mrkrs{j}, ...
+    'Linewidth', lw, 'Markersize', ms); hold on;
+end
+loglog(dof, (dof/dof(1)).^(-1/4), 'k:', 'Linewidth', lwth); 
+loglog(dof, (dof/dof(1)).^(-1/2), 'k:', 'Linewidth', lwth); 
+hold off;
+xlabel('# DoFs'); 
+ylabel('$| u_{\mathrm{ac}} - u |_{1,1} \, / \, | u |_{1,1}$', ...
+  'Interpreter', 'latex');
+axis([dof(1) / 1.5, dof(2) * 1.5, 1e-1, 1]);
+% legend('QCE', 'Linear Blending', 'Smooth Blending', 'DoF^{-1/2}', 'Location', 'Southwest');
+set(gca, 'XMinortick', 'off', 'YMinorTick', 'off', 'Fontsize', 14);
+
+
+% energy-error
+subplot(2,2,4);
+for j = 1:nac
+  loglog(DOF(j,:), ErrE(j, :), mrkrs{j}, ...
+    'Linewidth', lw, 'Markersize', ms); hold on;
+end
+loglog(dof, (dof/dof(1)).^(-1), 'k:', 'Linewidth', lwth); 
+loglog(dof, (dof/dof(1)).^(-2), 'k:', 'Linewidth', lwth); 
+hold off;
+xlabel('# DoFs'); 
+ylabel('$| u_{\mathrm{ac}} - u |_{1,1} \, / \, | u |_{1,2}$', ...
+  'Interpreter', 'latex');
+axis([dof(1) / 1.5, dof(2) * 1.5, 1e-2, 1]);
+% legend('QCE', 'Linear Blending', 'Smooth Blending', 'DoF^{-1/2}', 'Location', 'Southwest');
+set(gca, 'XMinortick', 'off', 'YMinorTick', 'off', 'Fontsize', 14);
+
+
+
