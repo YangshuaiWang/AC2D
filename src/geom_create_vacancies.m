@@ -46,6 +46,12 @@ for jV = 1:nV
   oldinds = (V(jV)+1):(V(jV+1)-1);
   newinds = (iX+1):(iX+V(jV+1)-V(jV)-1);
   I(oldinds) = newinds;
+  
+  
+   if isnan(geom.X(:, oldinds))
+        keyboard;
+   end
+    
   X(:, newinds) = geom.X(:, oldinds);
   iX = iX + length(oldinds);
 end
@@ -70,15 +76,31 @@ geom.onL(I == 0) = [];
 if isfield(geom, 'iPer')
   geom.iPer = I(geom.iPer);
 end
-geom.iBdry = I(geom.iBdry);
 
-% if the geom structure has already been analyzed, rerun it
-if isfield(geom, 'geom_analyze')
-  if geom.geom_analyze
-    geom.geom_analyze = false;
-    geom = geom_analyze(geom);
-  end
-end
+% YS: manily change here!!!!!!!!!!!!!!!
+% geom.iBdry = I(geom.iBdry);
+
+Idx = I(geom.iBdry)';
+X = geom.X(:,Idx);
+uIdx = find(X(2,:)>0 | abs(X(2,:))<1e-5);
+lIdx = setdiff(1:length(Idx), uIdx);
+p_up = X(1,uIdx);
+[~, uid] = sort(p_up, 'descend' );
+p_lw = X(1,lIdx);
+[~, lid] = sort(p_lw, 'ascend' );
+id = [uIdx(uid), lIdx(lid)];
+geom.iBdry = Idx(id);
+
+
+
+% 
+% % if the geom structure has already been analyzed, rerun it
+% if isfield(geom, 'geom_analyze')
+%   if geom.geom_analyze
+%     geom.geom_analyze = false;
+%     geom = geom_analyze(geom);
+%   end
+% end
 
 
 end
@@ -87,9 +109,13 @@ end
 %% test routine
 function test_geom_create_vacancies()
 
-geom = geom_2dtri_hexagon(30, 10, 1.2, 'per');
-geom = geom_create_vacancies(geom, [5, 10, 35]);
+geom = geom_2dtri_longhex(2, 10, 10, 1.2, 'dir');
+geom = geom_create_vacancies(geom, [1, 5, 6 7, 10]);
 geom.plot(geom);
+
+% geom = geom_2dtri_hexagon(30, 10, 1.2, 'per');
+% geom = geom_create_vacancies(geom, [5, 10, 35]);
+% geom.plot(geom);
 
 % modify test_geom_analyze to check how it behaves after vacancies are
 % removed

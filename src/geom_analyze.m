@@ -19,10 +19,10 @@ function geom = geom_analyze(geom, rCutH)
 %   return;
 % end
 if nargin == 0 
-  test_geom_analyze(); 
-  return;
+      test_geom_analyze(); 
+      return;
 elseif nargin == 1
-    rCutH = 1;
+      rCutH = 1;
 end
 
 % TERMINOLOGY: atomistic region = atomistically refined region

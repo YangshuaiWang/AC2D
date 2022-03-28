@@ -42,8 +42,8 @@ end
 function test_atm_energy()
 % define model and geometry
 N = 5;
-model = model_toyeam(4.0, 2.0, 10);
-geom = geom_2dtri_hexagon(N, N, 1, 'per');
+model = model_toyeam_h(4.0, 2.0, 10, 1);
+geom = geom_2dtri_hexagon(N, N, 1, 'dir');
 geom = geom_create_vacancies(geom, 1);
 geom = geom_analyze(geom);
 geom.volX = ones(1, geom.nX);
@@ -66,7 +66,13 @@ disp(['nX = ', num2str(geom.nX), '; nT = ', num2str(geom.nT)]);
   end
 
 % energy functional
-iFree = setdiff(1:geom.nX, geom.iPer(1,:));
+% iFree = setdiff(1:geom.nX, geom.iPer(1,:));
+if isfield(geom, 'iDir')
+  iFree = setdiff(1:geom.nX, geom.iDir);
+else
+  iFree = setdiff(1:geom.nX, geom.iBdry);
+end
+
 fcnl = @(W_)(atm_wrapper(W_, geom, model, iFree));
 
 % base point

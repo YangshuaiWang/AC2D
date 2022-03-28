@@ -214,13 +214,18 @@ geom.id = '2dtri_longhex';
 geom.plot = @geom_plot_2d;
 geom.iBdry = iBdry;
 geom.bc = bc;
+geom.aa = aa;
 
-if N == K1
-  geom.fulla = true;
+% if N == K1
+%   geom.fulla = true;
+% else
+%   geom.fulla = false;
+% end
+if sum(onL) == nX;
+    geom.fulla = true;
 else
-  geom.fulla = false;
+    geom.fulla = false;
 end
-
 end
 
 
@@ -232,9 +237,10 @@ function test_geom_2dtri_longhex()
 % geom = geom_create_vacancies(geom, 1:7);
 % geom.plot(geom);
 
-geom = geom_2dtri_longhex(3, 4, 20, 1.5, 'dir');
-geom = geom_create_vacancies(geom, 1:7);
-geom = geom_analyze(geom);
+geom = geom_2dtri_longhex(3, 10, 1000, 1.5, 'dir', [0.5, 10, 1]);
+% geom = geom_2dtri_longhex(3, 4, 20, 1.5, 'dir');
+% geom = geom_create_vacancies(geom, 1:7);
+geom = geom_analyze(geom, 2);
 geom.plot(geom);
 hold on;
 J = find(geom.di <= 3);

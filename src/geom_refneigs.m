@@ -35,7 +35,7 @@ function test_geom_refneigs()
 
 geom = geom_2dtri_longhex(5, 5, 20, 2, 'dir');
 geom = geom_create_vacancies(geom, 1:11);
-geom = geom_analyze(geom);
+geom = geom_analyze(geom, 2);
 geom = geom_refneigs(geom, 2);
 
 for n = 1:5:geom.nX

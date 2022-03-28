@@ -1,5 +1,6 @@
 
 %% function model = model_toyeam_h(a, b, c, rH)
+% model = model_toyeam_h(a, b, c, rho0, rH)
 % generates a model structure for a toy EAM model
 %    V(r) = sum_j J(|r_j|) + F( \sum_j \rho(|r_j|) )
 %    where   * J(s) = exp(-2a(s-1)) - 2*exp(-a(s-1))

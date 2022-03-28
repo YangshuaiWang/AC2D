@@ -34,7 +34,7 @@ for i = 2:6
     end
   else
     b = x1p'*x(:,i);
-    if abs(b) < 1e-5
+    if abs(b) < 1e-1
       ii(4) = i;
     elseif b > 0
       ii(3) = i;
