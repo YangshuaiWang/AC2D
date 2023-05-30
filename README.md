@@ -1,2 +1,2 @@
 # AC2D
-Clean codes for A/C coupling in 2D
+Codes for A/C coupling in 2D
