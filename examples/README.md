@@ -7,11 +7,10 @@
  * @FilePath: /AC2D/examples/README.md
 -->
 
-# MeshAC
+# Adaptive Feature
 
-A 3D Mesh Generation and Adaptation Package for Multiscale (atomistic-to-continuum) Coupling Simulation for Materials Defects. Written by Kejie Fu, Mingjie Liao and Yangshuai Wang.
+**AC2D** includes adaptive algorithms for atomistic-to-continuum coupling methods, allowing for efficient mesh refinement based on error estimation. This feature requires the external package **MeshAC** and additional functionality implemented in the Julia programming language.
 
-![two voids](./data/two_voids.jpg)
 
 ## Getting Started
 ### Installation
@@ -220,19 +219,9 @@ atdef = get_atdef(L, Lb, Lw)
 atc = AtC_di(atdef, h, L, Lc; fn = input_name, ofn = output_name);
 ```
 
-## Development
-
-MeshAC is under active development. Please don't hesitate to open feature requests to help us guide development. We more than welcome contributions!
-
-## Publications
-
-MeshAC has been used in the following publications.
-
-1. [Adaptive Multigrid Strategy for Geometry Optimization of Large-Scale Three Dimensional Molecular Mechanics (J. Comp. Phys. 2023)](https://www.sciencedirect.com/science/article/pii/S0021999123002085)<br> K. Fu, M. Liao, Y. Wang, J. Chen and L. Zhang
-
 ## Citation
 
-If you use the codes in a publication, please cite the repo using the .bib,
+If you use the codes of adaptivity in a publication, please cite the repo using the .bib,
 
 ```
 @misc{fu2024meshac,
