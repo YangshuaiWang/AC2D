@@ -1,10 +1,10 @@
 <!--
- * @Author: Kejie Fu
- * @Date: 2023-03-11 23:20:09
- * @LastEditTime: 2024-02-22 23:22:17
- * @LastEditors: Kejie Fu
- * @Description: 
- * @FilePath: /MeshAC/README.md
+ * @Author: Yangshuai Wang
+ * @Date: 2024-02-22 23:22:17
+ * @LastEditTime: 2024-11-03 12:34:36
+ * @LastEditors: Yangshuai Wang
+ * @Description: Adaptive AC
+ * @FilePath: /AC2D/examples/README.md
 -->
 
 # MeshAC
@@ -252,6 +252,3 @@ We used several useful libraries in our implement and testing listed as follows.
 - [Triangle](http://www.cs.cmu.edu/~quake/triangle.html)
 - [AABB.cc](https://github.com/lohedges/aabbcc.git)
 - [kdtree](https://github.com/jtsiomb/kdtree.git)
-
-
-
